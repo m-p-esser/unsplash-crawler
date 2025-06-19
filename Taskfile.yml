@@ -1,0 +1,85 @@
+# https://taskfile.dev
+
+version: '3'
+
+dotenv: ['.env']
+
+vars:
+  SERVICE_ACCOUNT: 'etl-airflow-test'  
+
+tasks:
+
+# Commands to interact to activate/expand access rights
+  set-default-gcp-project:
+    desc: Set default GCP project 
+    cmds:
+      - echo "Setting default GCP project to '$GCLOUD_PROJECT'"
+      - gcloud config set project $GCLOUD_PROJECT
+
+  set-main-account-as-default-gcp-account:
+    desc: Setting main account as default account for GCP
+    cmds:
+    - echo "Setting main account '$GCLOUD_MAIN_ACCOUNT' as default account for GCP"
+    - gcloud config set account $GCLOUD_MAIN_ACCOUNT
+
+  authenticate-with-gcp:
+    desc: Authenticate with GCP
+    cmds:
+    - gcloud auth login
+
+  enable-gcp-services:
+    deps: [set-main-account-as-default-gcp-account]
+    desc: Enable GCP Services required for this repo 
+    cmds:
+      - echo "Enabling GCP services"
+      - for: ['storage-component.googleapis.com', 'secretmanager.googleapis.com','compute.googleapis.com']
+        cmd: gcloud services enable {{.ITEM}}
+
+  create-service-account:
+    deps: [set-main-account-as-default-gcp-account]
+    desc: Create Service account
+    cmds:
+    - echo "Creating Service account {{.SERVICE_ACCOUNT}}"
+    - gcloud iam service-accounts create {{.SERVICE_ACCOUNT}}
+  
+  create-service-account-key-file:
+    desc: Create JSON Keyfile for Service account that can be used for authentification with GCP
+    cmds:
+    - echo "Creating Keyfile for Service account"
+    - mkdir -p .secrets
+    - gcloud iam service-accounts keys create ./.secrets/{{.SERVICE_ACCOUNT}}_keyfile.json --iam-account={{.SERVICE_ACCOUNT}}@$GCLOUD_PROJECT.iam.gserviceaccount.com
+    - echo "Created keyfile and stored it under './.secrets/{{.SERVICE_ACCOUNT}}_keyfile.json'"
+    
+  bind-iam-policies-to-service-account:
+    deps: [set-main-account-as-default-gcp-account]
+    desc: Give Service accounts access rights for GCP Services
+    cmds:
+      - echo "Bind IAM Policies to Service account {{.SERVICE_ACCOUNT}}"
+      - for: ['roles/storage.admin', 'roles/secretmanager.secretAccessor', 'roles/compute.admin']
+        cmd: gcloud projects add-iam-policy-binding $GCLOUD_PROJECT --member=serviceAccount:{{.SERVICE_ACCOUNT}}@{{.GCLOUD_PROJECT}}.iam.gserviceaccount.com --role={{.ITEM}}
+
+# Commands to interacte with Google Cloud VM    
+  setup-airflow-vm:
+    uv run playwright install
+    # Install UV
+    # Install Airflow
+
+  ssh-add-keys-to-vm:
+    desc: Add Public SSH Key to all VM instances in a GCP Project
+    dir: ../../.ssh
+    cmds:
+      - echo "Current directory:"
+      - pwd
+      - gcloud compute os-login ssh-keys add --key-file=id_rsa.pub --project=$GCLOUD_PROJECT
+
+  ssh-into-airflow-vm:
+    desc: SSH into Airflow GCP VM
+    dir: ../../.ssh
+    cmds:
+      - echo "Current directory:"
+      - pwd
+      - ssh -i id_rsa emarcphilipp_gmail_com@$GCLOUD_AIRFLOW_VM_EXTERNAL_IP
+
+  build-image:
+   docker compose build
+   # Maybe add steps to upload image to GCP (?)
