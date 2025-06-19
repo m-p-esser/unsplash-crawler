@@ -33,10 +33,27 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-##### Other ######
 # Flat files
 output/
 storage/
 
-# Log files
-logs/
+### The rules below don't make sense for .gitignore ###
+
+# Documentation
+README.md
+
+# Docker
+docker-compose.yaml
+Dockerfile
+
+# Package management
+.python_version
+
+# Task.dev
+Taskfile.yml
+
+# Git
+.git
+
+# Virtual env
+.venv
