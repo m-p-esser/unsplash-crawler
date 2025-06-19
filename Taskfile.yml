@@ -80,6 +80,18 @@ tasks:
       - pwd
       - ssh -i id_rsa emarcphilipp_gmail_com@$GCLOUD_AIRFLOW_VM_EXTERNAL_IP
 
-  build-image:
-   docker compose build
-   # Maybe add steps to upload image to GCP (?)
+  build-docker-image:
+    desc: Build Airflow Docker Images
+    cmds: 
+      - docker compose build
+
+  start-airflow-container:
+    desc: Start Airflow Container
+    cmds:
+      - docker compose run airflow-cli airflow config list
+      - docker compose up
+  
+  stop-airflow-container:
+    desc: Stop Airflow Container
+    cmds:
+      - docker compose down
