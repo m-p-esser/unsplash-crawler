@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name='Unsplash-Crawler',
     version='1.0.0',
-    url='https://github.com/m-p-esser/immo-crawler.git',
+    url='https://github.com/m-p-esser/unsplash-crawler.git',
     author='Author Name',
     author_email='author@gmail.com',
     description='Description of my package',
